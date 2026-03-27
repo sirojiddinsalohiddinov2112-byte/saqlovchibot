@@ -1,38 +1,56 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import asyncio
-from config import *
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import CommandStart
+
+from config import BOT_TOKEN, ADMIN_ID, CARD, OWNER
 import db
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# ================= MENU =================
 def main_menu():
-    kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton("📂 Chatlar", callback_data="chats"))
-    kb.add(InlineKeyboardButton("💎 Premium", callback_data="premium"))
-    return kb
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📂 Chatlar", callback_data="chats")],
+            [InlineKeyboardButton(text="💎 Premium", callback_data="premium")]
+        ]
+    )
 
-@dp.message_handler(commands=['start'])
-async def start(msg: types.Message):
+# ================= START =================
+@dp.message(CommandStart())
+async def start(msg: Message):
     db.add_user(msg.from_user.id)
     await msg.answer("👋 Xush kelibsiz", reply_markup=main_menu())
 
-@dp.callback_query_handler(lambda c: c.data == "premium")
-async def premium(call: types.CallbackQuery):
+# ================= PREMIUM =================
+@dp.callback_query(F.data == "premium")
+async def premium(call: CallbackQuery):
     await call.message.answer(
         f"💳 To‘lov uchun:\n{CARD}\n👤 {OWNER}\n\nChek yuboring"
     )
+    await call.answer()
 
-@dp.message_handler(content_types=['photo'])
-async def check(msg: types.Message):
+# ================= CHAT BUTTON =================
+@dp.callback_query(F.data == "chats")
+async def chats(call: CallbackQuery):
+    await call.message.answer("📂 Chatlar hali ulanmagan")
+    await call.answer()
+
+# ================= CHECK PAYMENT (PHOTO) =================
+@dp.message(F.photo)
+async def check(msg: Message):
     await bot.send_photo(
         ADMIN_ID,
         msg.photo[-1].file_id,
         caption=f"User: {msg.from_user.id}"
     )
 
+# ================= RUN =================
 async def main():
-    await dp.start_polling()
+    print("Bot ishga tushdi 🚀")
+    await dp.start_polling(bot)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
