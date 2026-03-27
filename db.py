@@ -49,7 +49,6 @@ def is_premium(user_id):
         return False
 
     premium_end = user[3]
-
     if premium_end is None:
         return False
 
