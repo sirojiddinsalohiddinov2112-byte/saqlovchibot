@@ -1,55 +1,24 @@
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 
-conn = sqlite3.connect("db.sqlite3", check_same_thread=False)
+conn = sqlite3.connect("backup.db", check_same_thread=False)
 cur = conn.cursor()
 
-# ================= TABLE =================
 cur.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    telegram_id INTEGER PRIMARY KEY,
-    phone TEXT,
-    trial_end TEXT,
-    premium_end TEXT
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    sender_id INTEGER,
+    text TEXT,
+    time TEXT
 )
 """)
 
 conn.commit()
 
-# ================= ADD USER =================
-def add_user(user_id):
-    trial = datetime.now() + timedelta(days=2)
-
+def save_message(user_id, sender_id, text):
     cur.execute("""
-    INSERT OR IGNORE INTO users (telegram_id, phone, trial_end, premium_end)
+    INSERT INTO messages (user_id, sender_id, text, time)
     VALUES (?, ?, ?, ?)
-    """, (user_id, None, trial.isoformat(), None))
-
+    """, (user_id, sender_id, text, datetime.now().isoformat()))
     conn.commit()
-
-# ================= GET USER =================
-def get_user(user_id):
-    cur.execute("SELECT * FROM users WHERE telegram_id=?", (user_id,))
-    return cur.fetchone()
-
-# ================= SET PREMIUM =================
-def set_premium(user_id):
-    premium = datetime.now() + timedelta(days=30)
-
-    cur.execute("""
-    UPDATE users SET premium_end=? WHERE telegram_id=?
-    """, (premium.isoformat(), user_id))
-
-    conn.commit()
-
-# ================= CHECK PREMIUM =================
-def is_premium(user_id):
-    user = get_user(user_id)
-    if not user:
-        return False
-
-    premium_end = user[3]
-    if premium_end is None:
-        return False
-
-    return datetime.fromisoformat(premium_end) > datetime.now()
