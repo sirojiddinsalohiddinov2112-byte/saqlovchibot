@@ -1,13 +1,13 @@
 from telethon import TelegramClient, events
-from config import API_ID, API_HASH
 
 clients = {}
 
-async def start_userbot(phone):
-    client = TelegramClient(f"sessions/{phone}", API_ID, API_HASH)
-    await client.start(phone=phone)
+async def start_userbot(phone, api_id, api_hash):
+    client = TelegramClient(f"sessions/{phone}", api_id, api_hash)
 
+    await client.start(phone=phone)
     clients[phone] = client
+
     print(f"✅ {phone} ulandi")
 
     @client.on(events.NewMessage)
