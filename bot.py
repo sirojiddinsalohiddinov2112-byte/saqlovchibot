@@ -1,53 +1,35 @@
 import asyncio
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import CommandStart
+from aiogram.types import Message, CallbackQuery
 
-from config import BOT_TOKEN, ADMIN_ID, CARD, OWNER
-import db
+from config import BOT_TOKEN, API_ID, API_HASH
+from userbot_manager import start_userbot
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# ================= MENU =================
-def main_menu():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="📂 Chatlar", callback_data="chats")],
-            [InlineKeyboardButton(text="💎 Premium", callback_data="premium")]
-        ]
-    )
+profiles = {}
 
-# ================= START =================
-@dp.message(CommandStart())
-async def start(msg: Message):
-    db.add_user(msg.from_user.id)
-    await msg.answer("👋 Xush kelibsiz", reply_markup=main_menu())
+@dp.message(F.text == "➕ Profil qo‘shish")
+async def add_profile(msg: Message):
+    await msg.answer("Telefon raqamni yuboring (userbot uchun)")
 
-# ================= PREMIUM =================
-@dp.callback_query(F.data == "premium")
-async def premium(call: CallbackQuery):
-    await call.message.answer(
-        f"💳 To‘lov uchun:\n{CARD}\n👤 {OWNER}\n\nChek yuboring"
-    )
-    await call.answer()
+@dp.message(F.contact)
+async def get_phone(msg: Message):
+    phone = msg.contact.phone_number
 
-# ================= CHAT BUTTON =================
-@dp.callback_query(F.data == "chats")
-async def chats(call: CallbackQuery):
-    await call.message.answer("📂 Chatlar hali ulanmagan")
-    await call.answer()
+    name = str(msg.from_user.id) + "_" + phone[-4:]
 
-# ================= CHECK PAYMENT (PHOTO) =================
-@dp.message(F.photo)
-async def check(msg: Message):
-    await bot.send_photo(
-        ADMIN_ID,
-        msg.photo[-1].file_id,
-        caption=f"User: {msg.from_user.id}"
-    )
+    asyncio.create_task(start_userbot(name, API_ID, API_HASH, phone))
 
-# ================= RUN =================
+    profiles[name] = phone
+
+    await msg.answer(f"✅ Profil ulandi:\n{name}")
+
+@dp.message()
+async def echo(msg: Message):
+    await msg.answer("OK")
+
 async def main():
     print("Bot ishga tushdi 🚀")
     await dp.start_polling(bot)
