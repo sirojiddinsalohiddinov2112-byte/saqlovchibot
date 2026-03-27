@@ -5,7 +5,7 @@ from config import *
 import db
 
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 def main_menu():
     kb = InlineKeyboardMarkup()
